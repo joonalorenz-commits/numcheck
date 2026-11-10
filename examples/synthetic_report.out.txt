@@ -1,0 +1,48 @@
+synthetic_report.txt: 14 numbers checked, 9 flagged
+
+  page 1 · text_denominator · inconsistent: printed 29.1, computed 29.4
+    30/102: the sentence names this denominator, and other statements of the sentence fit it
+    "…Of the 102 participants randomized, 30 (29.1%) had a diagnosis of rheumatoid arthritis"
+
+  page 1 · text_denominator · truncated: printed 62.2, computed 264/424
+    264 (62.2 %): no number of people gives this value when rounded, truncated with 424
+    "…Among all participants who completed the questionnaire, 264 (62.2%) were female and 160
+    (37.7%) were male."
+
+  page 1 · text_denominator · impossible: printed 89.1
+    40 (89.1 %): no number of people gives this value when rounded
+    "…Adverse events of grade 3 or higher occurred in 40 (89.1%) of the evaluable participants in
+    the lo"
+
+  page 1 · text_vs_table · inconsistent: printed 165 (15.0%), computed 161 (15.0)
+    the table on page 2 shows 161 (15.0) in the row "Incidence of hypoxaemia, n (%)": column "Supine
+    group"
+    "…Hypoxaemia occurred in 58 (5.4%) patients in the lateral group and 165 (15.0%) in the supine
+    group (P < .001)."
+
+  page 1 · ci_p · impossible: printed hazard ratio 0.95 (0.65 to 0.86), P = .01
+    the estimate lies outside its confidence interval
+    "…he treatment group (hazard ratio 0.95 (95% CI, 0.65-0.86; P = .01"
+
+  page 1 · test_statistic · inconsistent: printed P = 0.004, computed 0.0410
+    t test, two-sided
+    "…red between groups, t(48) = 2.10, P = 0.004"
+
+  page 3 · row_total · inconsistent: printed 24, computed 23
+    the groups add up to 23, the Total column shows 24 (5 of 6 rows add up)
+    "…(N = 250) Asian 5 (4.0) 2 (1.6) 7 (2.8) Black 20 (15.9) 22 (17.7) 42 (16.8) White 90 (71.4) 88
+    (71.0) 178 (71.2) Other 11 (8.7) 12 (9.7) 24 (9.6) Fema"
+
+  page 3 · column_partition · inconsistent: printed 56.3, computed 56.5
+    70/124: the 2 categories of column 2 add up to 100 %, their counts to 124
+    "…= 250) Asian 5 (4.0) 2 (1.6) 7 (2.8) Black 20 (15.9) 22 (17.7) 42 (16.8) White 90 (71.4) 88
+    (71.0) 178 (71.2) Other 11 (8.7) 12 (9.7) 24 (9.6) Female 61 (48.4) 70 (56.3) 131"
+
+  page 3 · column_partition · inconsistent: printed 43.7, computed 43.5
+    54/124: the 2 categories of column 2 add up to 100 %, their counts to 124
+    "…Black 20 (15.9) 22 (17.7) 42 (16.8) White 90 (71.4) 88 (71.0) 178 (71.2) Other 11 (8.7) 12
+    (9.7) 24 (9.6) Female 61 (48.4) 70 (56.3) 131 (52.4) Male 65 (51.6) 54 (43.7) 119"
+
+  impossible: no combination of whole numbers gives this value; inconsistent: does not match the other numbers; truncated: only reachable by truncating instead of rounding
+  per check: ci_p 1, column_partition 2, row_total 1, table_cell 2, test_statistic 1, text_denominator 5, text_vs_table 2
+

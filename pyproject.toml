@@ -1,0 +1,33 @@
+[project]
+name = "numcheck"
+version = "0.1.0"
+description = "Find numbers in clinical trial reports that cannot be right, without the data"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "Joona Lorenz" }]
+keywords = ["clinical trials", "GRIM", "consistency", "metascience", "medical writing", "statcheck"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Intended Audience :: Science/Research",
+]
+dependencies = []
+
+[project.optional-dependencies]
+pdf = ["pypdf>=4.0"]
+dev = ["pytest>=7.4", "pypdf>=4.0"]
+
+[project.scripts]
+numcheck = "numcheck.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
