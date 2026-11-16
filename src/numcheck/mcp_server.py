@@ -98,7 +98,8 @@ TOOLS = [
     },
 ]
 for _t in TOOLS:
-    _t["annotations"] = {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": _t["name"] != "list_checks"}
+    _t["annotations"] = {"title": _t["title"], "readOnlyHint": True, "destructiveHint": False,
+                         "idempotentHint": True, "openWorldHint": _t["name"] != "list_checks"}
 
 
 class ToolError(Exception):

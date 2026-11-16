@@ -1,0 +1,17 @@
+{
+  "name": "numcheck",
+  "owner": {
+    "name": "Joona Lorenz",
+    "url": "https://github.com/joonalorenz-commits"
+  },
+  "metadata": {
+    "description": "numcheck: consistency checks for clinical trial reports"
+  },
+  "plugins": [
+    {
+      "name": "numcheck",
+      "source": "./plugins/numcheck",
+      "description": "Find numbers in clinical trial reports that cannot be right, without the data."
+    }
+  ]
+}

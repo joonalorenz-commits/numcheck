@@ -1,0 +1,20 @@
+{
+  "name": "numcheck",
+  "version": "0.1.1",
+  "description": "Find numbers in clinical trial reports that cannot be right, without the data: percentages, table totals, p values, confidence intervals and text versus tables.",
+  "author": {
+    "name": "Joona Lorenz",
+    "url": "https://github.com/joonalorenz-commits"
+  },
+  "homepage": "https://github.com/joonalorenz-commits/numcheck",
+  "repository": "https://github.com/joonalorenz-commits/numcheck",
+  "license": "MIT",
+  "keywords": [
+    "clinical trials",
+    "GRIM",
+    "statcheck",
+    "medical writing",
+    "metascience",
+    "research integrity"
+  ]
+}

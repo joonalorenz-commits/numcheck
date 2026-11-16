@@ -66,7 +66,7 @@ synthetic_report.txt: 14 numbers checked, 9 flagged
 
 `numcheck-mcp` runs numcheck as an MCP server (stdio, or `--http` for remote
 clients) with read-only tools for pasted text, PMC articles and document URLs.
-[chatgpt/](chatgpt/README.md) has the setup for a Custom GPT and a ChatGPT connector.
+[chatgpt/](chatgpt/README.md) has the setup for ChatGPT. In Claude Code: `/plugin marketplace add joonalorenz-commits/numcheck`, then `/plugin install numcheck@numcheck`. In claude.ai, add `https://numcheck-mcp.onrender.com/mcp` as a custom connector.
 
 ## Checks
 

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "numcheck": {
+      "type": "http",
+      "url": "https://numcheck-mcp.onrender.com/mcp"
+    }
+  }
+}
