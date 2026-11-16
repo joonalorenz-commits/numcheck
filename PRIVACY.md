@@ -14,11 +14,24 @@ downloads that public document itself.
 result. Documents and results are not stored, not logged, not shared and not
 used for training. Temporary files are deleted as soon as a request finishes.
 
+**Patient data.** numcheck needs only aggregate numbers. Do not send
+documents that contain identifiable patient data or other personal health
+information; the service is not meant to process them.
+
+**Recipients.** The server runs on Render (render.com), which hosts it and
+processes the requests on our behalf. When you give a URL or PMCID, the
+server requests that document from the named site or from NCBI; those sites
+see a request from the server, not from you. Nothing is sold or shared with
+anyone else.
+
 **Logs.** The hosting provider and the server keep standard request logs
 (time, path, status code, IP address) for operation and abuse prevention.
 These logs contain no document content and are kept for at most 30 days.
 
-**No accounts, no cookies, no tracking.**
+**No accounts, no cookies, no tracking, no profiling.** Because nothing
+about you is stored beyond the request logs, there is no account data to
+access or delete; you control what you send by choosing what to paste or
+link.
 
 **Confidential documents.** Do not send documents you are not allowed to share
 with a third-party service. For confidential reports, run numcheck locally:

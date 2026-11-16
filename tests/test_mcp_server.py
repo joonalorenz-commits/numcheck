@@ -54,3 +54,20 @@ def test_private_urls_are_refused():
 def test_text_limit():
     r = rpc("tools/call", {"name": "check_text", "arguments": {"text": "x" * (m.MAX_TEXT + 1)}})["result"]
     assert r["isError"]
+
+
+def test_challenge_route(monkeypatch):
+    import threading, urllib.request, urllib.error
+    from http.server import ThreadingHTTPServer
+    monkeypatch.setenv("OPENAI_APPS_CHALLENGE", "tok123")
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), m._Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_port}/.well-known/openai-apps-challenge"
+    assert urllib.request.urlopen(url).read() == b"tok123"
+    monkeypatch.delenv("OPENAI_APPS_CHALLENGE")
+    try:
+        urllib.request.urlopen(url)
+        assert False
+    except urllib.error.HTTPError as e:
+        assert e.code == 404
+    srv.shutdown()

@@ -7,3 +7,7 @@ services:
     plan: free
     autoDeploy: true
     healthCheckPath: /health
+    envVars:
+      # Public by design: OpenAI checks it at /.well-known/openai-apps-challenge
+      - key: OPENAI_APPS_CHALLENGE
+        value: AZepwrLIgP4EDXpqgdCrR6z3hiTt8yBi7kEAAMCNvNE

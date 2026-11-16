@@ -40,7 +40,8 @@ INSTRUCTIONS = (
     "document (percentages from counts, totals from groups, p values from test statistics, text from "
     "tables). A flagged number means 'cannot be reproduced from the other numbers on the page', not "
     "'the paper is wrong': there may be a reason the document does not show. Present flags as things "
-    "to look at, quote the passage, and never call a paper or its authors fraudulent."
+    "to look at, quote the passage, and never call a paper or its authors fraudulent. Report what "
+    "numcheck computed; do not invent corrected values or recompute numbers yourself."
 )
 
 _COMMON = {
@@ -290,6 +291,9 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/health"):
             self._send(200, b'{"ok":true,"server":"numcheck"}')
+        elif self.path.split("?")[0] == "/.well-known/openai-apps-challenge":
+            token = os.environ.get("OPENAI_APPS_CHALLENGE", "").strip()
+            self._send(200, token.encode(), "text/plain") if token else self._send(404)
         else:
             self._send(405)  # no server-initiated stream
 
