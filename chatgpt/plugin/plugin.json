@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "numcheck",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Find numbers in clinical trial reports that cannot be right, without the data. Recomputes percentages, table totals, p values and confidence intervals from other numbers printed in the same document.",
   "author": {
     "name": "Joona Lorenz",
