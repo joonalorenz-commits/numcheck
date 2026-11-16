@@ -4,3 +4,4 @@ bench/injected_errors.json
 __pycache__/
 *.egg-info/
 .pytest_cache/
+chatgpt/dist/

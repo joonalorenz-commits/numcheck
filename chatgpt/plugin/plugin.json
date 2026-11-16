@@ -1,0 +1,40 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "numcheck",
+  "version": "0.1.0",
+  "description": "Find numbers in clinical trial reports that cannot be right, without the data. Recomputes percentages, table totals, p values and confidence intervals from other numbers printed in the same document.",
+  "author": {
+    "name": "Joona Lorenz",
+    "url": "https://github.com/joonalorenz-commits"
+  },
+  "homepage": "https://github.com/joonalorenz-commits/numcheck",
+  "repository": "https://github.com/joonalorenz-commits/numcheck",
+  "license": "MIT",
+  "keywords": ["clinical trials", "GRIM", "statcheck", "medical writing", "metascience", "consistency"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "numcheck",
+        "shortDescription": "Check numbers in trial reports",
+        "longDescription": "numcheck recomputes the numbers in clinical trial reports and trial publications from other numbers printed in the same document: percentages from counts and denominators, category columns from group sizes, Total columns from the groups, p values from test statistics and two-group counts, estimates against their confidence intervals, and numbers in the text against the table they were copied from. It needs only the document (PDF, PubMed Central XML or text), never the underlying data, and runs entirely in the ChatGPT sandbox.\n\nIt is meant for medical writers, reviewers, systematic reviewers and meta-researchers as a second pair of eyes. A flagged number means it cannot be reproduced from the other numbers on the page, not that the paper is wrong: there may be a reason the document does not show, such as a subgroup denominator or a model-based p value.\n\nLimitations: it only checks what is printed, cannot tell which of two contradicting numbers is right, and works poorly on scanned PDFs or tables that lose their layout during text extraction. Open source (MIT).",
+        "developerName": "Joona Lorenz",
+        "category": "Research",
+        "capabilities": ["Check percentages against counts", "Check table totals", "Recompute p values", "Compare text with tables"],
+        "websiteURL": "https://github.com/joonalorenz-commits/numcheck",
+        "supportURL": "https://github.com/joonalorenz-commits/numcheck/issues",
+        "defaultPrompt": [
+          "Check the numbers in this trial report.",
+          "Run numcheck on the example report.",
+          "Do the percentages in this results paragraph add up?"
+        ],
+        "brandColor": "#0F6E6E",
+        "brandColorDark": "#5CC8C0",
+        "composerIcon": "./assets/logo.svg",
+        "logo": "./assets/logo.svg"
+      },
+      "publication": {
+        "release_notes": "First release: eleven consistency checks for clinical trial reports, PDF, PMC XML and text input."
+      }
+    }
+  }
+}

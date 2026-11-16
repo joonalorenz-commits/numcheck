@@ -1,6 +1,20 @@
 # numcheck in ChatGPT
 
-Two ways, from cheap to proper.
+## 0. Plugin (skills, current format)
+
+`plugin/` is an Agent Plugins package with one skill that runs numcheck's own
+code. Build the ZIP with `python chatgpt/build_plugin.py` (copies `src/numcheck`
+into the skill) and upload it under chatgpt.com/plugins → Add → Upload plugin
+archive, or submit it at platform.openai.com/plugins.
+
+Status 16.11.2026: the upload works and the listing shows correctly. In Codex and
+in ChatGPT Work the skill folder is on disk and the script runs. In plain ChatGPT
+chat (tested on a Free account) the model can read skill files but they are not
+mounted in the Python sandbox, and the sandbox has no internet, so the script
+cannot run there. For plain chat the plugin needs the MCP server below on a public
+HTTPS host, declared in `plugin/mcp.json`.
+
+Older ways:
 
 ## 1. Custom GPT (no server, 10 minutes)
 
