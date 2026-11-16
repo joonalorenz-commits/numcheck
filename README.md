@@ -62,6 +62,12 @@ synthetic_report.txt: 14 numbers checked, 9 flagged
     the groups add up to 23, the Total column shows 24 (5 of 6 rows add up)
 ```
 
+## In ChatGPT, Claude and other assistants
+
+`numcheck-mcp` runs numcheck as an MCP server (stdio, or `--http` for remote
+clients) with read-only tools for pasted text, PMC articles and document URLs.
+[chatgpt/](chatgpt/README.md) has the setup for a Custom GPT and a ChatGPT connector.
+
 ## Checks
 
 | check | what it recomputes |

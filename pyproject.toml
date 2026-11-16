@@ -21,6 +21,7 @@ dev = ["pytest>=7.4", "pypdf>=4.0"]
 
 [project.scripts]
 numcheck = "numcheck.cli:main"
+numcheck-mcp = "numcheck.mcp_server:main"
 
 [build-system]
 requires = ["setuptools>=68"]
