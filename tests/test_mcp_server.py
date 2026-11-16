@@ -41,3 +41,16 @@ def test_errors_are_tool_results():
     r = rpc("tools/call", {"name": "check_url", "arguments": {"url": "file:///etc/passwd"}})["result"]
     assert r["isError"]
     assert "error" in rpc("nope")
+
+
+def test_private_urls_are_refused():
+    for url in ("http://127.0.0.1:8765/mcp", "http://localhost/", "http://169.254.169.254/latest/meta-data/",
+                "http://10.0.0.1/x.pdf", "http://[::1]/"):
+        r = rpc("tools/call", {"name": "check_url", "arguments": {"url": url}})["result"]
+        assert r["isError"], url
+        assert "private or local" in r["content"][0]["text"] or "resolve" in r["content"][0]["text"]
+
+
+def test_text_limit():
+    r = rpc("tools/call", {"name": "check_text", "arguments": {"text": "x" * (m.MAX_TEXT + 1)}})["result"]
+    assert r["isError"]

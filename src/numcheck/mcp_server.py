@@ -15,10 +15,14 @@ Tools (all read-only):
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
+import os
 import re
+import socket
 import sys
 import tempfile
+import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -27,6 +31,7 @@ from numcheck import CHECKS, FLAGGED, VERDICTS, __version__, check, document, su
 
 PROTOCOL = "2025-06-18"
 MAX_BYTES = 25 * 1024 * 1024
+MAX_TEXT = 2_000_000  # characters of pasted text
 MAX_FINDINGS = 200
 USER_AGENT = f"numcheck/{__version__} (+https://github.com/joonalorenz-commits/numcheck)"
 
@@ -127,14 +132,39 @@ def report(pages: dict[int, str], source: str, include_consistent: bool = False)
     }
 
 
-def _fetch(url: str) -> tuple[bytes, str]:
-    if not re.match(r"https?://", url, re.I):
+def _check_public(url: str) -> None:
+    """Refuse URLs that point into private networks (the server may run on a public host)."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme.lower() not in ("http", "https") or not parts.hostname:
         raise ToolError("Only http(s) URLs are supported.")
+    try:
+        infos = socket.getaddrinfo(parts.hostname, parts.port or (443 if parts.scheme.lower() == "https" else 80))
+    except socket.gaierror as e:
+        raise ToolError(f"Could not resolve {parts.hostname}.") from e
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0].split("%")[0])
+        if not ip.is_global or ip.is_multicast:
+            raise ToolError("This URL points to a private or local address.")
+
+
+class _PublicRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _check_public(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_PublicRedirects)
+
+
+def _fetch(url: str) -> tuple[bytes, str]:
+    _check_public(url)
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with _OPENER.open(req, timeout=30) as r:
             data = r.read(MAX_BYTES + 1)
             ctype = r.headers.get("Content-Type", "")
+    except ToolError:
+        raise
     except Exception as e:  # network errors are reported to the model, not raised
         raise ToolError(f"Could not fetch {url}: {e}") from e
     if len(data) > MAX_BYTES:
@@ -179,6 +209,8 @@ def call_tool(name: str, args: dict) -> dict:
         text = args.get("text") or ""
         if not text.strip():
             raise ToolError("No text given.")
+        if len(text) > MAX_TEXT:
+            raise ToolError("Text is longer than 2 million characters; send the document as a URL instead.")
         return report(split_pages(text), "pasted text", inc)
     if name == "check_pmc":
         return check_pmc(str(args.get("pmcid", "")), inc)
@@ -286,8 +318,8 @@ class _Handler(BaseHTTPRequestHandler):
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="numcheck-mcp", description="numcheck as an MCP server")
     ap.add_argument("--http", action="store_true", help="streamable HTTP at /mcp instead of stdio")
-    ap.add_argument("--host", default="127.0.0.1")
-    ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8765)))
     args = ap.parse_args(argv)
     if args.http:
         srv = ThreadingHTTPServer((args.host, args.port), _Handler)

@@ -1,0 +1,9 @@
+# Render Blueprint: dashboard.render.com -> New -> Blueprint -> this repo.
+# Free plan sleeps after 15 min without requests; the first call then takes ~1 minute.
+services:
+  - type: web
+    name: numcheck-mcp
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health

@@ -12,7 +12,7 @@ in ChatGPT Work the skill folder is on disk and the script runs. In plain ChatGP
 chat (tested on a Free account) the model can read skill files but they are not
 mounted in the Python sandbox, and the sandbox has no internet, so the script
 cannot run there. For plain chat the plugin needs the MCP server below on a public
-HTTPS host, declared in `plugin/mcp.json`.
+HTTPS host: see [HOSTING.md](HOSTING.md) and `build_plugin.py --mcp-url`.
 
 Older ways:
 
