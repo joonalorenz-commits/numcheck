@@ -72,7 +72,8 @@ TOOLS = [
         "title": "Check a PubMed Central article",
         "description": (
             "Fetch an open-access article from PubMed Central by PMCID (e.g. PMC7106986) and check its "
-            "abstract, results section and tables."
+            "abstract, results section and tables. The article is fetched as JATS XML through NCBI E-utilities "
+            "efetch (https://www.ncbi.nlm.nih.gov/books/NBK25499/)."
         ),
         "inputSchema": {
             "type": "object",
@@ -185,7 +186,7 @@ def check_pmc(pmcid: str, include_consistent: bool = False) -> dict:
     num = re.sub(r"(?i)^\s*pmc", "", pmcid.strip())
     if not num.isdigit():
         raise ToolError(f"'{pmcid}' is not a PMCID like PMC7106986.")
-    url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id={num}&rettype=xml"
+    url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id={num}&rettype=xml&tool=numcheck"
     data, _ = _fetch(url)
     if b"<body" not in data and b"<abstract" not in data:
         raise ToolError(f"PMC{num} has no open-access full text that NCBI returns.")
@@ -292,6 +293,9 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/health"):
             self._send(200, b'{"ok":true,"server":"numcheck"}')
+        elif self.path.split("?")[0] in ("/favicon.ico", "/favicon.png", "/icon.png"):
+            icon = Path(__file__).with_name("static") / "icon.png"
+            self._send(200, icon.read_bytes(), "image/png") if icon.exists() else self._send(404)
         elif self.path.split("?")[0] == "/.well-known/openai-apps-challenge":
             token = os.environ.get("OPENAI_APPS_CHALLENGE", "").strip()
             self._send(200, token.encode(), "text/plain") if token else self._send(404)
