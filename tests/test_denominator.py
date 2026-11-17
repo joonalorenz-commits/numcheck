@@ -54,3 +54,8 @@ def test_age_is_no_count():
     assert _verdicts(text) == []
     text = "Obesity affected 15 991 of 36 396 individuals aged 18 to 29 years (43.9%) in the large cohort overall."
     assert _verdicts(text) == []
+
+
+def test_label_with_digit_is_no_count():
+    # "type B1 (40.7%)" names a lesion type, not one patient (SSCP, 17.11.2026)
+    assert _verdicts("The lesions were type B1 (40.7%), B2 (14.8%) and C (14.8%) in this study.") == []

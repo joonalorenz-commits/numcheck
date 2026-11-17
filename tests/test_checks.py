@@ -214,3 +214,8 @@ def test_row_total_column():
     rows = "Asian 5 (4.0) 2 (1.6) 7 (2.8) Black 20 (15.9) 22 (17.7) 42 (16.8) White 90 (71.4) 88 (71.0) 178 (71.2) "
     assert _of_check(kopf + rows + "Other 11 (8.7) 12 (9.7) 23 (9.2)", "row_total") == []
     assert _of_check(kopf + rows + "Other 11 (8.7) 12 (9.7) 24 (9.6)", "row_total") == [("24", "inconsistent")]
+
+
+def test_unit_exponent_is_no_estimate():
+    # "3.9 mm2 [3.3- 4.5" must not read the 2 of mm2 as the estimate (SSCP, 17.11.2026)
+    assert _interval("least square means difference: 3.9 mm2 [3.3- 4.5]; p < 0.0001") == []

@@ -34,9 +34,10 @@ from numcheck.stats import compare_percent, decimals
 _WHOLE = r"\d{1,3}(?:[, ]\d{3})+(?![\d.])|\d+"
 # "37 (36.3%)", "42 participants (5.3%)", "45 users (97.8%)", not "37/102 (36.3%)".
 # One word between count and bracket, but no unit ("29 years (43.9%)" is an age).
+# No digit glued to a letter: "type B1 (40.7%)" is a label, not one person.
 _UNIT = (r"years?|months?|weeks?|days?|hours?|minutes?|mg|kg|g|ml|cm|mm|points?|times|sessions|visits|items|doses"
          r"|included|scored|reported|had|were|was")
-_STATEMENT = re.compile(rf"(?<![\d.,/−<>≤≥-])(?<!\d )({_WHOLE})(?!\s?(?:/|of|out of)\s?\d)((?: (?!(?:{_UNIT})\b)[a-z]+)?)"
+_STATEMENT = re.compile(rf"(?<![\d.,/−<>≤≥-])(?<![A-Za-z])(?<!\d )({_WHOLE})(?!\s?(?:/|of|out of)\s?\d)((?: (?!(?:{_UNIT})\b)[a-z]+)?)"
                         rf"\s?[(\[]\s?({NUMBER})\s?%\s?[)\]]")
 # A range or an age before it: "between 35 and 49 (48.2%)", "aged 18 to 29 (43.9%)"
 _NO_COUNT = re.compile(r"(?:\bbetween \d+\s?(?:and|to)|\bages? (?:of )?\d+\s?(?:and|to|-|–)|\d\s?(?:to|-|–)|\bages?(?: of)?"
