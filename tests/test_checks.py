@@ -40,6 +40,27 @@ def test_t_statistic():
     assert [x.verdict for x in b if x.check == "test_statistic"] == ["consistent", "inconsistent"]
 
 
+def test_row_with_its_own_n_is_read_against_that_n():
+    # Device variants: each row has its own number of uses, the header N does not apply.
+    b = _on_page("Survey (n=6) Bench (n=30) Clinical (n=36) Device n (%) Bentson 18 18 (100%) 16 (89%) 17 (94%) "
+                 "Double-Ended 2 2 (100%) 2 (100%) 2 (100%)")
+    cells = [x for x in b if x.check == "table_cell"]
+    assert [x.verdict for x in cells] == ["consistent"] * 6
+    assert "own n" in cells[0].note and "/18" in cells[0].note
+
+
+def test_row_with_its_own_n_still_finds_a_wrong_cell():
+    b = _on_page("Survey (n=6) Bench (n=30) Clinical (n=36) Device n (%) Bentson 18 18 (100%) 16 (79%) 17 (94%)")
+    assert "other_denominator" in [x.verdict for x in b if x.check == "table_cell"] or \
+        "impossible" in [x.verdict for x in b if x.check == "table_cell"]
+
+
+def test_empty_cell_marked_na_counts_as_a_column():
+    # "N/A" is an empty cell, so the cells after it do not start a row.
+    b = _on_page("Survey (n=6) Bench (n=30) Device n (%) SS Fixed Core 2 3 3 (100%) N/A 3 (100%) 2 (100%)")
+    assert [x for x in b if x.check == "table_cell" and x.verdict != "consistent"] == []
+
+
 def test_table_cell_reachable_with_no_denominator():
     b = _on_page("Drug (N=295) Placebo (N=307) Stent — no. (%) 246 (38.4) 250 (81.4)")
     assert [x.verdict for x in b if x.check == "table_cell"] == ["impossible", "consistent"]

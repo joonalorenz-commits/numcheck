@@ -60,7 +60,7 @@ _HEADER = re.compile(r"(?:\(\s?n|(?<![A-Za-z])N)\s?=\s?(\d{1,3}(?:[, ]\d{3})+|\d
 _PAIR = rf"(?<![\d.,−-])(\d+)\s?\(\s?({NUMBER})\s?%?\s?\)"
 # Another cell before or after (even an empty "0") means the row has more
 # columns than the header, so matching cells to N would be a guess.
-_PAIR_BEFORE = re.compile(rf"(?:\d\s?\(\s?{NUMBER}\s?%?\s?\)|(?<![\w.])0)\s*$")
+_PAIR_BEFORE = re.compile(rf"(?:\d\s?\(\s?{NUMBER}\s?%?\s?\)|(?<![\w.])0|(?<![\w/])N/?A)\s*$")
 _PAIR_AFTER = re.compile(r"^\s*(?:\d+\s?\(|0(?![\w.]))")
 
 
@@ -99,6 +99,32 @@ def _any_denominator(p: str, denominators: Iterable[int], count: Optional[int] =
     return truncated
 
 
+def _row_denominator(before: str, m: re.Match, header: list[int], upper: int) -> Optional[int]:
+    """The row's own n, when the column Ns do not fit but one n fits every cell.
+
+    Tables of device variants often print a row as "Bentson 18 18 (100%) 16 (89%)":
+    the first 18 is the number of uses of that variant, and every cell refers to
+    it, not to the N in the column header. Reading such a row against the header
+    gives one "other denominator" per cell. When a single n between the largest
+    count and the largest N gives every percentage in the row, the row is read
+    against that n instead. The number printed right before the cells is tried
+    first. A row where any cell fits no common n keeps the column reading.
+    """
+    cells = [(int(m.group(2 * i + 1)), m.group(2 * i + 2), n) for i, n in enumerate(header)]
+    cells = [(k, p, n) for k, p, n in cells if k and float(p) <= 100]
+    if not cells:
+        return None
+    if all(compare_percent(k, n, p)[0] == "consistent" for k, p, n in cells):
+        return None
+    cells = [(k, p) for k, p, _ in cells]
+    printed = re.search(r"(?<![\d.,])(\d+)\s*$", before)
+    candidates = ([int(printed.group(1))] if printed else []) + list(range(max(k for k, _ in cells), upper + 1))
+    for n in candidates:
+        if n >= max(k for k, _ in cells) and all(compare_percent(k, n, p)[0] == "consistent" for k, p in cells):
+            return n
+    return None
+
+
 def table_cells(page: int, t: str, header: list[int]) -> list[Finding]:
     """Each cell "k (p)" against the N of its column.
 
@@ -122,9 +148,15 @@ def table_cells(page: int, t: str, header: list[int]) -> list[Finding]:
             continue
         if "%" not in m.group(0) and not _percent_row(t[:m.start()]):
             continue
+        row_n = _row_denominator(t[:m.start()], m, header, upper)
         for i, n in enumerate(header):
             k, p = int(m.group(2 * i + 1)), m.group(2 * i + 2)
             if k == 0 or float(p) > 100:
+                continue
+            if row_n:
+                verdict, computed = compare_percent(k, row_n, p)
+                note = f"{k}/{row_n} (row has its own n, column {i + 1})"
+                out.append(Finding(page, "table_cell", _context(t, m, 70, 0), p, computed, verdict, note, *m.span(2 * i + 2)))
                 continue
             verdict, computed = compare_percent(k, n, p)
             note = f"{k}/{n} (column {i + 1})"
