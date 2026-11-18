@@ -27,7 +27,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from numcheck import CHECKS, FLAGGED, VERDICTS, __version__, check, document, summary
+from numcheck import CHECKS, CONFIDENCE, FLAGGED, VERDICTS, __version__, check, document, summary
 
 PROTOCOL = "2025-06-18"
 MAX_BYTES = 25 * 1024 * 1024
@@ -220,7 +220,8 @@ def call_tool(name: str, args: dict) -> dict:
     if name == "check_url":
         return check_url(str(args.get("url", "")), inc)
     if name == "list_checks":
-        return {"checks": CHECKS, "verdicts": VERDICTS, "flagged_verdicts": list(FLAGGED), "how_to_read": INSTRUCTIONS}
+        return {"checks": CHECKS, "verdicts": VERDICTS, "flagged_verdicts": list(FLAGGED),
+                "confidence_levels": CONFIDENCE, "how_to_read": INSTRUCTIONS}
     raise ToolError(f"Unknown tool {name}")
 
 

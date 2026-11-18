@@ -15,11 +15,11 @@ table it was copied from. Nothing is estimated, and no data are needed.
 
 from __future__ import annotations
 
-from numcheck import checks, denominator, document, text_vs_table
-from numcheck.finding import FLAGGED, VERDICTS, Finding
+from numcheck import checks, denominator, document, second_reader, text_vs_table
+from numcheck.finding import CONFIDENCE, FLAGGED, VERDICTS, Finding
 
 __version__ = "0.1.0"
-__all__ = ["check", "summary", "Finding", "VERDICTS", "FLAGGED", "CHECKS", "document"]
+__all__ = ["check", "summary", "Finding", "VERDICTS", "FLAGGED", "CONFIDENCE", "CHECKS", "document"]
 
 CHECKS = {
     "fraction": "k of n (p%): percentage against count and denominator",

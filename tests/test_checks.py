@@ -240,3 +240,18 @@ def test_row_total_column():
 def test_unit_exponent_is_no_estimate():
     # "3.9 mm2 [3.3- 4.5" must not read the 2 of mm2 as the estimate (SSCP, 17.11.2026)
     assert _interval("least square means difference: 3.9 mm2 [3.3- 4.5]; p < 0.0001") == []
+
+
+def test_confidence_levels():
+    from numcheck.finding import confidence
+    assert confidence("fraction", "inconsistent", "97", "94") == "high"
+    assert confidence("fraction", "inconsistent", "0.479", "0.478") == "medium"
+    assert confidence("table_cell", "impossible", "38.4", "-") == "medium"
+    assert confidence("grim_percent", "impossible", "85.6", "-") == "low"
+    assert confidence("fraction", "truncated", "0.5", "0.6") == "low"
+    assert confidence("fraction", "consistent", "50", "50") == ""
+
+
+def test_confidence_in_json():
+    (f,) = [x for x in _on_page("11 of 137 (8.8%) patients died.") if x.check == "fraction"]
+    assert f.as_dict()["confidence"] == "high"
