@@ -55,6 +55,22 @@ def test_row_with_its_own_n_still_finds_a_wrong_cell():
         "impossible" in [x.verdict for x in b if x.check == "table_cell"]
 
 
+def test_row_whose_printed_n_does_not_fit_is_reported():
+    # Survey table with an n column: "20 users, 2 (100%)" must not be read as 2/2.
+    b = _on_page("Survey (n=6) Bench (n=30) Clinical (n=36) Device n (%) Bentson 18 18 (100%) 16 (89%) 17 (94%) "
+                 "PTFE Fixed Core 1 20 2 (100%) 2 (100%) 2 (100%)")
+    ptfe = [x for x in b if x.check == "table_cell" and "PTFE" in x.quote]
+    assert [x.verdict for x in ptfe] == ["other_denominator"] * 3
+    assert "n = 20" in ptfe[0].note and ptfe[0].computed == "10"
+
+
+def test_printed_n_alone_does_not_override_the_search():
+    # Without another row that confirms an n column, the number before the cells
+    # may be anything (a footnote, a code); the old reading stays.
+    b = _on_page("Survey (n=6) Bench (n=30) Clinical (n=36) Device n (%) PTFE Fixed Core 1 20 2 (100%) 2 (100%) 2 (100%)")
+    assert all(x.verdict == "consistent" for x in b if x.check == "table_cell")
+
+
 def test_empty_cell_marked_na_counts_as_a_column():
     # "N/A" is an empty cell, so the cells after it do not start a row.
     b = _on_page("Survey (n=6) Bench (n=30) Device n (%) SS Fixed Core 2 3 3 (100%) N/A 3 (100%) 2 (100%)")
@@ -255,3 +271,14 @@ def test_confidence_levels():
 def test_confidence_in_json():
     (f,) = [x for x in _on_page("11 of 137 (8.8%) patients died.") if x.check == "fraction"]
     assert f.as_dict()["confidence"] == "high"
+
+
+def test_two_columns_per_n_with_empty_cells():
+    # Adverse event table: Any grade and Grade >=3 under each arm, "0" for empty cells.
+    text = ("Cilta-cel N=188 Standard Therapy N=208 n (%) "
+            "ALK increased 86 (45.7) 11 (5.9) 30 (14.4) 4 (1.9) AST increased 25 (28) 0 30 (14.4) 4 (1.9) "
+            "HLH/MAS 2 (1) 1 (0.5) 1 (2) 0 Infections 107 (57) 46 (24.5) 30 (14.4) 4 (1.9)")
+    cells = [(x.printed, x.verdict) for x in _on_page(text) if x.check == "table_cell"]
+    assert ("28", "inconsistent") in cells      # 25 of 188 is 13 %; 28 % would need n = 89
+    assert ("2", "inconsistent") in cells       # 1 of 208 is 0.5 %
+    assert ("45.7", "consistent") in cells and ("24.5", "consistent") in cells

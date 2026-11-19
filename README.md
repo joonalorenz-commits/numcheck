@@ -19,6 +19,8 @@ reproduced from the other numbers on the page", and someone has to look at it.
 
 ```bash
 pip install "numcheck[pdf] @ git+https://github.com/joonalorenz-commits/numcheck"
+# with a second PDF reader for --second-reader:
+pip install "numcheck[pdf2] @ git+https://github.com/joonalorenz-commits/numcheck"
 ```
 
 Python 3.9 or newer.
@@ -30,7 +32,24 @@ numcheck report.pdf                     # flagged numbers
 numcheck article.xml --all              # also the numbers that are consistent
 numcheck *.xml --csv findings.csv       # many documents into one CSV
 numcheck report.pdf --json
+numcheck report.pdf --min-confidence high   # only flags a reader can verify in seconds
+numcheck report.pdf --second-reader         # read flagged pages again with pdfplumber
+numcheck report.pdf --audit-log runs.jsonl  # version, input hash and findings hash per run
+numcheck --selftest                         # fixed reference cases, for installation checks
 ```
+
+Every flag has a confidence: **high** when the contradicting numbers are printed together, **medium** when it depends on how a table was read, **low** for truncation and for GRIM checks without a stated group size.
+
+Compare a statement with the publication it cites (PubMed Central, open access):
+
+```bash
+numcheck-source report.pdf --page 10 --source PMC8999580
+numcheck-source --text "11 of 137 (8.8%) patients died" --source 10.3390/jcm11071978
+```
+
+It finds the sentence in the source with the same numbers, lists numbers that differ, shows other sentences that report the same result (for example abstract against results), and runs the checks on them, so a source that contradicts itself is visible.
+
+For use in regulated work (intended use, requirements, self test, audit log) see [docs/VALIDATION.md](docs/VALIDATION.md).
 
 ```python
 from numcheck import check, document

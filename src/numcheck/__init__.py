@@ -18,7 +18,7 @@ from __future__ import annotations
 from numcheck import checks, denominator, document, second_reader, text_vs_table
 from numcheck.finding import CONFIDENCE, FLAGGED, VERDICTS, Finding
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["check", "summary", "Finding", "VERDICTS", "FLAGGED", "CONFIDENCE", "CHECKS", "document"]
 
 CHECKS = {
@@ -51,6 +51,7 @@ def check(pages: dict[int, str]) -> list[Finding]:
         header = new if len(new) >= 2 else header     # a table continues on the next page
         out += checks.fractions(n, t)
         out += checks.table_cells(n, t, header)
+        out += checks.table_cells_spanned(n, t, header)
         out += checks.category_sums(n, t, header)
         out += checks.column_partitions(n, t)
         out += checks.row_totals(n, t, header)
@@ -62,7 +63,15 @@ def check(pages: dict[int, str]) -> list[Finding]:
             header = []                                # at most one continuation page
     out += text_vs_table.check(prepared)
     out += denominator.check(prepared)
-    return out
+    # Two table checks can read the same cell; keep the first reading.
+    seen, unique = set(), []
+    for f in out:
+        key = (f.page, f.check, f.start, f.printed) if f.start >= 0 else None
+        if key is None or key not in seen:
+            unique.append(f)
+            if key:
+                seen.add(key)
+    return unique
 
 
 def summary(findings: list[Finding]) -> dict[str, dict[str, int]]:

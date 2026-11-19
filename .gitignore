@@ -6,3 +6,5 @@ __pycache__/
 .pytest_cache/
 chatgpt/dist/
 build/
+bench/errata/out/
+bench/out_injected_*.json

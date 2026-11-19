@@ -99,6 +99,23 @@ def _any_denominator(p: str, denominators: Iterable[int], count: Optional[int] =
     return truncated
 
 
+def _printed_row_n(before: str, m: re.Match, header: list[int]) -> Optional[tuple[int, bool]]:
+    """The number printed right before the cells, and whether every cell fits it.
+
+    None when there is no such number or it is smaller than a count in the row
+    (then it is a label like "Core 1", not the row's n).
+    """
+    printed = re.search(r"(?<![\d.,])(\d+)\s*$", before)
+    if not printed:
+        return None
+    n = int(printed.group(1))
+    cells = [(int(m.group(2 * i + 1)), m.group(2 * i + 2)) for i in range(len(header))]
+    cells = [(k, p) for k, p in cells if k and float(p) <= 100]
+    if not cells or n < max(k for k, _ in cells):
+        return None
+    return n, all(compare_percent(k, n, p)[0] == "consistent" for k, p in cells)
+
+
 def _row_denominator(before: str, m: re.Match, header: list[int], upper: int) -> Optional[int]:
     """The row's own n, when the column Ns do not fit but one n fits every cell.
 
@@ -125,6 +142,82 @@ def _row_denominator(before: str, m: re.Match, header: list[int], upper: int) ->
     return None
 
 
+# A cell of a table row: "k (p)", an empty "0", or a dash.
+_CELL = rf"(?:(?<![\d.,−-])\d+\s?\(\s?{NUMBER}\s?%?\s?\)|(?<![\w.,])0(?![\w.,%(])|(?<![\w])[-–](?![\w]))"
+_CELL_PARTS = re.compile(rf"(?<![\d.,−-])(\d+)\s?\(\s?({NUMBER})\s?%?\s?\)|(?<![\w.,])(0)(?![\w.,%(])|(?<![\w])([-–])(?![\w])")
+_RUN = re.compile(rf"{_CELL}(?:\s+{_CELL})+")
+
+
+def table_cells_spanned(page: int, t: str, header: list[int]) -> list[Finding]:
+    """Rows with two or three columns per N, as in most adverse event tables.
+
+    "Cilta-cel N=188 | Standard N=208" with the columns "Any grade, Grade >=3"
+    under each N gives rows like "AST increased 25 (28) 0 30 (14.4) 4 (1.9)":
+    four cells, two Ns. Empty cells are printed as "0" or "-". table_cells skips
+    such rows, because the number of cells is not the number of Ns. Here a row
+    whose number of cells is exactly two or three times the number of Ns is read
+    with each N covering that many columns, left to right.
+    """
+    # Two tables on one page repeat the same Ns: [188, 208, 188, 208] -> [188, 208].
+    header = list(dict.fromkeys(header))
+    if len(header) < 2:
+        return []
+    upper = max(header)
+    rows = []
+    for run in _RUN.finditer(t):
+        parts = list(_CELL_PARTS.finditer(run.group(0)))
+        m = len(parts)
+        if m == len(header) or m % len(header) or m // len(header) not in (2, 3):
+            continue
+        if not any(x.group(1) for x in parts):
+            continue
+        # Long tables state "n (%)" once in the header, far above the row.
+        if "%" not in run.group(0) and not _percent_row(t[:run.start()]) \
+                and not re.search(r"\(\s?n\s?/\s?%\s?\)|\bn\s?\(\s?%\s?\)", t[:run.start()]):
+            continue
+        if re.search(r"\d\s*$", t[:run.start()]):
+            continue          # a number right before the row: probably its own n, not this layout
+        rows.append((run, parts, m // len(header)))
+
+    # The layout is a guess. It is used only when one row of the page, with at
+    # least three filled cells, fits it completely.
+    def fits(parts, span):
+        filled = [(j, x) for j, x in enumerate(parts) if x.group(1) and int(x.group(1)) > 0]
+        return len(filled) >= 3 and all(
+            compare_percent(int(x.group(1)), header[j // span], x.group(2))[0] == "consistent" for j, x in filled)
+
+    confirmed = {span for _, parts, span in rows if fits(parts, span)}
+    out = []
+    for run, parts, span in rows:
+        if span not in confirmed:
+            continue
+        for j, x in enumerate(parts):
+            if not x.group(1):
+                continue
+            k, p, n = int(x.group(1)), x.group(2), header[j // span]
+            if k == 0 or float(p) > 100:
+                continue
+            verdict, computed = compare_percent(k, n, p)
+            note = f"{k}/{n} (column {j + 1}, N covers {span} columns)"
+            if verdict != "consistent":
+                other = _any_denominator(p, range(k, upper + 1), k)
+                if other and other[0] == "consistent" and other[2] * 2 < n:
+                    # A layout confirmed by a full row, and a cell that would need less than
+                    # half of the column N: not a subgroup, most likely a wrong count or percentage.
+                    verdict, note = "inconsistent", (f"{k}/{n} gives {computed}; {p} would need a denominator of "
+                                                     f"{other[2]}, less than half of N={n} (column {j + 1})")
+                elif other and other[0] == "consistent":
+                    verdict, note = "other_denominator", f"{k}/{other[2]} instead of /{n} (column {j + 1})"
+                elif other:
+                    verdict, note = "truncated", f"{k}/{other[2]} only when truncated (column {j + 1})"
+                else:
+                    verdict, note = "impossible", f"no denominator up to {upper} gives this with {k} (column {j + 1})"
+            s, e = run.start() + x.start(2), run.start() + x.end(2)
+            out.append(Finding(page, "table_cell", t[max(0, run.start() - 70):run.end()].strip(), p, computed,
+                               verdict, note, s, e))
+    return out
+
+
 def table_cells(page: int, t: str, header: list[int]) -> list[Finding]:
     """Each cell "k (p)" against the N of its column.
 
@@ -137,7 +230,7 @@ def table_cells(page: int, t: str, header: list[int]) -> list[Finding]:
         return []
     upper = max(header)
     run = re.compile(r"\s+".join([_PAIR] * len(header)))
-    out = []
+    rows = []
     for m in run.finditer(t):
         if any(t[m.start(2 * i + 1) - 1:m.start(2 * i + 1)] == "/" for i in range(len(header))):
             continue  # "k/n (p)" is checked by fractions()
@@ -148,10 +241,44 @@ def table_cells(page: int, t: str, header: list[int]) -> list[Finding]:
             continue
         if "%" not in m.group(0) and not _percent_row(t[:m.start()]):
             continue
+        rows.append((m, _printed_row_n(t[:m.start()], m, header)))
+
+    # A table with its own n column: at least one other row on the page where the
+    # number before the cells fits every cell of that row and not the column Ns.
+    # In such a table the printed n of a row is the denominator. A row whose cells
+    # do not fit it ("20 | 2 (100%)") is reported against it, instead of searching
+    # for some other n that happens to fit.
+    def own_n_row(m, printed):
+        if not printed or not printed[1]:
+            return False
+        return not all(compare_percent(int(m.group(2 * i + 1)), n, m.group(2 * i + 2))[0] == "consistent"
+                       for i, n in enumerate(header) if int(m.group(2 * i + 1)))
+    n_column_rows = [m for m, printed in rows if own_n_row(m, printed)]
+
+    out = []
+    for m, printed in rows:
         row_n = _row_denominator(t[:m.start()], m, header, upper)
+        printed_wrong = (printed is not None and not printed[1]
+                         and any(other is not m for other in n_column_rows))
         for i, n in enumerate(header):
             k, p = int(m.group(2 * i + 1)), m.group(2 * i + 2)
             if k == 0 or float(p) > 100:
+                continue
+            if printed_wrong:
+                pn = printed[0]
+                verdict, computed = compare_percent(k, pn, p)
+                if verdict == "consistent":
+                    note = f"{k}/{pn} (row has its own n, column {i + 1})"
+                else:
+                    other = _any_denominator(p, range(k, upper + 1), k)
+                    if other and other[0] == "consistent":
+                        verdict, note = "other_denominator", (f"{k}/{pn} gives {computed}, the row prints n = {pn}; "
+                                                              f"{p} fits {k}/{other[2]} (column {i + 1})")
+                    elif other:
+                        verdict, note = "truncated", f"{k}/{other[2]} only when truncated, row prints n = {pn} (column {i + 1})"
+                    else:
+                        verdict, note = "impossible", f"no denominator up to {upper} gives this with {k}, row prints n = {pn} (column {i + 1})"
+                out.append(Finding(page, "table_cell", _context(t, m, 70, 0), p, computed, verdict, note, *m.span(2 * i + 2)))
                 continue
             if row_n:
                 verdict, computed = compare_percent(k, row_n, p)
