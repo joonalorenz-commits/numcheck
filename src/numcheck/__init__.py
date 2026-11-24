@@ -27,6 +27,7 @@ CHECKS = {
     "category_sum": "categories adding up to 100 % cannot hold more people than N",
     "column_partition": "categories adding up to 100 % share one denominator",
     "row_total": "a Total column is the sum of the group columns",
+    "subgroup_mean": "the mean of a whole group lies between the means of its subgroups",
     "grim_percent": "x.y% of patients is reachable with a group size of the document (GRIM)",
     "text_denominator": "k (p%) in the text against the denominator of the sentence, or any denominator (GRIM)",
     "text_vs_table": "k (p%) in the text against the same row in a table",
@@ -55,6 +56,7 @@ def check(pages: dict[int, str]) -> list[Finding]:
         out += checks.category_sums(n, t, header)
         out += checks.column_partitions(n, t)
         out += checks.row_totals(n, t, header)
+        out += checks.subgroup_means(n, t, header)
         out += checks.grim_percents(n, t, denominators)
         out += checks.two_group_tests(n, t, arms)
         out += checks.test_statistics(n, t)

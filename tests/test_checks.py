@@ -282,3 +282,41 @@ def test_two_columns_per_n_with_empty_cells():
     assert ("28", "inconsistent") in cells      # 25 of 188 is 13 %; 28 % would need n = 89
     assert ("2", "inconsistent") in cells       # 1 of 208 is 0.5 %
     assert ("45.7", "consistent") in cells and ("24.5", "consistent") in cells
+
+
+def test_subgroup_mean_outside_both_subgroups():
+    # SIRONA 2, Table 1 (Sharif 2022): the overall heart rate is below both subgroups.
+    kopf = "Characteristic Implanted (n = 70) HFpEF (n = 27) HFrEF (n = 43) "
+    counts = ("Male sex, n (%) 50 (71.4) 16 (59.3) 34 (79.1) White race, n (%) 66 (94.3) 25 (92.6) 41 (95.3) "
+              "Diabetes mellitus, n (%) 32 (45.7) 14 (51.9) 18 (41.8) ")
+    means = ("Age (years), mean (SD) 71.0 (10.0) 74.0 (9.6) 69.0 (9.9) "
+             "Heart rate (beats per min), mean (SD) 71.4 (10.5) 78.0 (19.7) 72.0 (11.8) "
+             "Cardiac Index (L/min/m2), mean (SD) 2.8 (3.2) 2.5 (0.9) 2.3 (0.6)")
+    assert _of_check(kopf + counts + means, "subgroup_mean") == [
+        ("71.0", "consistent"), ("71.4", "impossible"), ("2.8", "impossible")]
+
+
+def test_subgroup_mean_allows_rounding_and_needs_confirmed_columns():
+    kopf = "All (N = 100) A (N = 40) B (N = 60) "
+    counts = "Female 50 (50.0) 20 (50.0) 30 (50.0) Smoker 30 (30.0) 12 (30.0) 18 (30.0) "
+    # 72.0 against 72.1: within rounding of the printed values
+    assert _of_check(kopf + counts + "Weight, mean ± SD 72.0 ± 9 72.1 ± 8 75.3 ± 10", "subgroup_mean") == [("72.0", "consistent")]
+    assert _of_check(kopf + counts + "Weight, mean ± SD 71.9 ± 9 72.1 ± 8 75.3 ± 10", "subgroup_mean") == [("71.9", "impossible")]
+    # no count rows that confirm which column is the total: no finding
+    assert _of_check(kopf + "Weight, mean ± SD 60.0 ± 9 72.1 ± 8 75.3 ± 10", "subgroup_mean") == []
+    # the N of no column is the sum of the others: no finding
+    assert _of_check("A (N = 50) B (N = 40) C (N = 60) " + counts + "Weight, mean ± SD 60.0 ± 9 72.1 ± 8 75.3 ± 10",
+                     "subgroup_mean") == []
+
+
+def test_page_footer_is_not_a_fraction():
+    # Mizuho SSCP: the footer runs into the next line of text
+    text = "EFFECTIVE DATE: 04-MAR-2024 Page 21 of 57 patients (95.7%), poor outcome was rare"
+    assert _of_check(text, "fraction") == []
+    assert _of_check("in 21 of 57 patients (36.8%)", "fraction") == [("36.8", "consistent")]
+
+
+def test_header_broken_over_two_lines():
+    from numcheck import checks
+    assert checks.header_counts("Year 1 (N=23 0) Year 2 (N=23 0)") == [230, 230]
+    assert checks.header_counts("Drug (N=295) Placebo (N = 1,030)") == [295, 1030]

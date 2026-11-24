@@ -30,7 +30,7 @@ from pathlib import Path
 from numcheck.finding import Finding
 
 # Checks that only need the page itself (and a header on the page before).
-PAGE_LOCAL = ("fraction", "table_cell", "row_total", "category_sum", "column_partition",
+PAGE_LOCAL = ("fraction", "table_cell", "row_total", "subgroup_mean", "category_sum", "column_partition",
               "ci_p", "test_statistic")
 
 

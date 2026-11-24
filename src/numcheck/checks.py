@@ -6,6 +6,7 @@ Checks within one page: numbers that follow from other numbers on the same page.
 - category_sum    categories whose percentages add up to 100 cannot hold more people than N.
 - column_partition categories adding up to 100 % share one denominator, the sum of their counts.
 - row_total       a "Total" column must be the sum of the group columns in every row.
+- subgroup_mean   the mean of the whole group must lie between the means of its subgroups.
 - grim_percent    "82.3% of patients": can any whole number of patients give this value?
                   (the GRIM test, Brown & Heathers 2017)
 - two_group_test  "27 of 295 ... 52 of 307 ... (P = 0.005)": does Fisher's exact test or a
@@ -41,11 +42,15 @@ def _context(text: str, m: re.Match, before: int = 60, after: int = 30) -> str:
 # ---------------------------------------------------------------- fraction
 _INTEGER = r"\d{1,3}(?:,\d{3})+|\d+"
 _FRACTION = re.compile(rf"(?<![\d.,])({_INTEGER})\s?(?:of|/)\s?({_INTEGER})(?: [a-z]+){{0,2}}\s?\(({NUMBER}){PERCENT}\)")
+# A page footer glued to the next line: "Page 21 of 57 patients (95.7%)" is not 21 of 57.
+_PAGE_BEFORE = re.compile(r"\b(?:page|pages|pg\.?|p\.|seite)\s*$", re.I)
 
 
 def fractions(page: int, t: str) -> list[Finding]:
     out = []
     for m in _FRACTION.finditer(t):
+        if _PAGE_BEFORE.search(t[max(0, m.start() - 10):m.start()]):
+            continue
         k, n, p = int(m.group(1).replace(",", "")), int(m.group(2).replace(",", "")), m.group(3)
         verdict, computed = compare_percent(k, n, p)
         out.append(Finding(page, "fraction", _context(t, m), p, computed, verdict, f"{k}/{n}", *m.span(3)))
@@ -82,7 +87,12 @@ def _percent_row(before: str) -> bool:
     return bool(re.search(r"\(\s?%\s?\)", before[-300:]))
 
 
+# A header cell broken over two lines: "(N=23 0)" is N = 230.
+_SPLIT_HEADER = re.compile(r"(\(\s?[Nn]\s?=\s?\d+) (\d{1,2})(?=\s?\))")
+
+
 def header_counts(t: str) -> list[int]:
+    t = _SPLIT_HEADER.sub(r"\1\2", t)
     return [int(re.sub(r"[, ]", "", x)) for x in _HEADER.findall(t)]
 
 
@@ -680,6 +690,66 @@ def row_totals(page: int, t: str, header: list[int]) -> list[Finding]:
             out.append(Finding(page, "row_total", t[max(0, r[0][2][0] - 120):b + 5].strip(), str(k), str(total),
                                "inconsistent", f"the groups add up to {total}, the Total column shows {k} "
                                f"({len(adding_up)} of {len(rows)} rows add up)", r[0][2][0], b))
+    return out
+
+
+# ----------------------------------------------------------- subgroup_mean
+_MEAN_VALUE = r"(?<![\w.,])([−-]?\d+(?:\.\d+)?)\s?(?:\(\s?\d+(?:\.\d+)?\s?\)|±\s?\d+(?:\.\d+)?)"
+_MEAN_LABEL = re.compile(r"\bmean\b(?!\s+(?:difference|change|ratio))[^\d]{0,40}?", re.I)
+
+
+def _total_column(header: list[int]) -> Optional[int]:
+    """Index of the column whose N is the sum of all the others ("All (n = 70) A (n = 27) B (n = 43)")."""
+    if len(header) < 3:
+        return None
+    for i, n in enumerate(header):
+        if n == sum(header) - n:
+            return i
+    return None
+
+
+def _half_step(printed: str) -> Fraction:
+    """Half a unit of the last printed digit: 71.4 -> 0.05."""
+    return Fraction(1, 2 * 10 ** decimals(printed))
+
+
+def subgroup_means(page: int, t: str, header: list[int]) -> list[Finding]:
+    """A mean of the whole group must lie between the means of its subgroups.
+
+    "Heart rate, mean (SD) 71.4 (10.5) 78.0 (19.7) 72.0 (11.8)" under
+    "(n = 70) (n = 27) (n = 43)": the overall mean is a weighted average of
+    the subgroup means, so it cannot be below 72.0. Rounding of the printed
+    values is allowed for. Only the range is checked, not the weighted
+    average itself, because subgroups can have missing values.
+
+    The columns are matched to the header only when the count rows of the
+    page confirm it: in most "k (p)" rows the total column is the sum of the
+    others.
+    """
+    total = _total_column(header)
+    if total is None:
+        return []
+    count_rows = [r for r in _all_rows(t) if len(r) == len(header)]
+    adding_up = [r for r in count_rows if r[total][0] == sum(k for i, (k, _, _) in enumerate(r) if i != total)]
+    if len(adding_up) < 2 or len(adding_up) < 0.8 * len(count_rows):
+        return []
+    row = re.compile(_MEAN_LABEL.pattern + r"\s" + r"\s+".join([_MEAN_VALUE] * len(header))
+                     + r"(?!\s*(?:[−-]?\d+(?:\.\d+)?\s?(?:\(|±)))", re.I)
+    out = []
+    for m in row.finditer(t):
+        values = [m.group(i + 1).replace("−", "-") for i in range(len(header))]
+        overall = values[total]
+        groups = [v for i, v in enumerate(values) if i != total]
+        x = Fraction(overall)
+        lo = min(Fraction(v) - _half_step(v) for v in groups) - _half_step(overall)
+        hi = max(Fraction(v) + _half_step(v) for v in groups) + _half_step(overall)
+        inside = lo <= x <= hi
+        quote = t[max(0, m.start() - 60):m.end()].strip()
+        start, end = m.span(total + 1)
+        note = (f"the subgroup means are {' and '.join(groups)}; an overall mean is a weighted average "
+                f"of its subgroups and must lie between them")
+        out.append(Finding(page, "subgroup_mean", quote, overall, f"{min(groups, key=float)} to {max(groups, key=float)}",
+                           "consistent" if inside else "impossible", "" if inside else note, start, end))
     return out
 
 

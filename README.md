@@ -96,6 +96,7 @@ clients) with read-only tools for pasted text, PMC articles and document URLs.
 | `category_sum` | categories whose percentages add up to 100 cannot hold more people than the N of the column |
 | `column_partition` | categories whose percentages add up to 100 share one denominator, the sum of their counts; every cell must match it, with or without a header |
 | `row_total` | in a table with a "Total (N = …)" column whose N is the sum of the groups, every row must add up |
+| `subgroup_mean` | in a table with a column for the whole group (its N is the sum of the subgroups), the mean of the whole group must lie between the subgroup means |
 | `grim_percent` | "82.3% of patients": is the value reachable with any group size named in the document (GRIM, Brown and Heathers 2017) |
 | `text_denominator` | "k (p%)" in running text: against the denominator named in the sentence ("Of the 102 participants, …"), against the sum of a list whose percentages add up to 100, or against any whole number at all (GRIM with a count) |
 | `text_vs_table` | "k (p%)" in running text against the matching row of a table in the same document |

@@ -23,7 +23,7 @@ CONFIDENCE = {
     "low": "a rounding convention or a group size the document does not state; often harmless",
 }
 # Checks whose result depends on matching cells to columns of a table.
-_TABLE_CHECKS = ("table_cell", "category_sum", "column_partition", "row_total")
+_TABLE_CHECKS = ("table_cell", "category_sum", "column_partition", "row_total", "subgroup_mean")
 
 
 def _last_digit_off_by_one(printed: str, computed: str) -> bool:
