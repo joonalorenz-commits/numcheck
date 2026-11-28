@@ -54,7 +54,8 @@ def test_von_count_is_not_a_statement_of_its_own():
 def test_table_continued_on_next_page_keeps_its_header():
     # Page 1: a one-arm table (N = 30), then a four-column table whose rows go on to page 2.
     # Page 2 starts with those rows and then has a new header for another part of the table.
-    page1 = ("Tabelle 1 Risankizumab N = 30 Randomisiert, n (%) 30 (100,0) "
+    page1 = ("Tabelle 1 Risankizumab N = 30 Randomisiert, n (%) 30 (100,0) Studienabbruch, n (%) 3 (10,0) "
+             "Lost to follow up 1 (3,3) Einwilligung zurückgezogen 1 (3,3) Studie abgeschlossen, n (%) 27 (90,0) "
              "Tabelle 2 Risankizumab Ustekinumab Risankizumab Ustekinumab N = 304 N = 100 N = 294 N = 99 "
              "Alter, n (%) 86 (28,3) 34 (34,0) 105 (35,7) 30 (30,3)")
     page2 = ("Ethnie, n (%) weiß 200 (65,8) 74 (74,0) 255 (86,7) 91 (91,9) "
