@@ -37,11 +37,11 @@ _WHOLE = r"\d{1,3}(?:[, ]\d{3})+(?![\d.])|\d+"
 # No digit glued to a letter: "type B1 (40.7%)" is a label, not one person.
 _UNIT = (r"years?|months?|weeks?|days?|hours?|minutes?|mg|kg|g|ml|cm|mm|points?|times|sessions|visits|items|doses"
          r"|included|scored|reported|had|were|was")
-_STATEMENT = re.compile(rf"(?<![\d.,/−<>≤≥-])(?<![A-Za-z])(?<!\d )({_WHOLE})(?!\s?(?:/|of|out of)\s?\d)((?: (?!(?:{_UNIT})\b)[a-z]+)?)"
+_STATEMENT = re.compile(rf"(?<![\d.,/−<>≤≥-])(?<![A-Za-z])(?<!\d )(?<![<>≤≥] )({_WHOLE})(?!\s?(?:/|of|out of|von)\s?\d)((?: (?!(?:{_UNIT})\b)[a-z]+)?)"
                         rf"\s?[(\[]\s?({NUMBER})\s?%\s?[)\]]")
 # A range or an age before it: "between 35 and 49 (48.2%)", "aged 18 to 29 (43.9%)"
-_NO_COUNT = re.compile(r"(?:\bbetween \d+\s?(?:and|to)|\bages? (?:of )?\d+\s?(?:and|to|-|–)|\d\s?(?:to|-|–)|\bages?(?: of)?"
-                       r"|\baged|\bof(?: the| all)?\W?)\s*$")
+_NO_COUNT = re.compile(r"(?:(?i:\b(?:grade|grad|genotype|genotyp|stage|stadium|type|typ|phase|class|klasse|level|stufe))\s*$|\bbetween \d+\s?(?:and|to)|\bages? (?:of )?\d+\s?(?:and|to|-|–)|\d\s?(?:to|-|–)|\bages?(?: of)?"
+                       r"|\baged|\bof(?: the| all)?\W?|\bvon(?: den| allen)?\W?)\s*$")
 # A group or its own denominator after it: "49 (98%) in the active group", "1174 (68.2%) of 1721"
 _OWN_GROUP = re.compile(r"^\s*(?:\w+\s)?(?:were\s|was\s)?(?:(?:in|on|for) the [\w\s\-+/.]{1,40}?(?:group|arm|cohort)|of \d)")
 _PEOPLE = (r"participants?|patients?|adults|children|women|men|individuals|respondents|users|subjects|people|persons"

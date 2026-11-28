@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+
+from numcheck.number_format import english
 from xml.etree import ElementTree as ET
 
 # Some PDF fonts (Symbol, Wingdings) map ASCII into the private use area U+F020..F07E.
@@ -88,5 +90,8 @@ def read(path: str | Path) -> dict[int, str]:
 
 
 def prepare(pages: dict[int, str]) -> dict[int, str]:
-    """The text the checks see, and that finding positions refer to."""
-    return {n: with_lines(readable(t)) for n, t in sorted(pages.items())}
+    """The text the checks see, and that finding positions refer to.
+
+    Pages in German number notation ("19,4 %") are rewritten to English notation, character for character.
+    """
+    return {n: english(with_lines(readable(t))) for n, t in sorted(pages.items())}

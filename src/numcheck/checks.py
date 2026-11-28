@@ -40,8 +40,12 @@ def _context(text: str, m: re.Match, before: int = 60, after: int = 30) -> str:
 
 
 # ---------------------------------------------------------------- fraction
+# German nouns for people are capitalised: "12 von 40 Patienten (30,0 %)"
+_DE_PEOPLE = r"Patient(?:en|innen)|Teilnehmer(?:n|innen)?|Probanden|Personen|Kindern?|Fällen?"
 _INTEGER = r"\d{1,3}(?:,\d{3})+|\d+"
-_FRACTION = re.compile(rf"(?<![\d.,])({_INTEGER})\s?(?:of|/)\s?({_INTEGER})(?: [a-z]+){{0,2}}\s?\(({NUMBER}){PERCENT}\)")
+# German "von" may also take the percentage in square brackets: "6 von 11 [54,5 %]"
+_FRACTION = re.compile(rf"(?<![\d.,])(?P<k>{_INTEGER})\s?(?:(?P<de>von)|of|/)\s?(?P<n>{_INTEGER})(?: (?:[a-z]+|{_DE_PEOPLE})){{0,2}}"
+                       rf"\s?(?(de)[(\[]|\()(?P<p>{NUMBER}){PERCENT}(?(de)[)\]]|\))")
 # A page footer glued to the next line: "Page 21 of 57 patients (95.7%)" is not 21 of 57.
 _PAGE_BEFORE = re.compile(r"\b(?:page|pages|pg\.?|p\.|seite)\s*$", re.I)
 
@@ -51,9 +55,9 @@ def fractions(page: int, t: str) -> list[Finding]:
     for m in _FRACTION.finditer(t):
         if _PAGE_BEFORE.search(t[max(0, m.start() - 10):m.start()]):
             continue
-        k, n, p = int(m.group(1).replace(",", "")), int(m.group(2).replace(",", "")), m.group(3)
+        k, n, p = int(m.group("k").replace(",", "")), int(m.group("n").replace(",", "")), m.group("p")
         verdict, computed = compare_percent(k, n, p)
-        out.append(Finding(page, "fraction", _context(t, m), p, computed, verdict, f"{k}/{n}", *m.span(3)))
+        out.append(Finding(page, "fraction", _context(t, m), p, computed, verdict, f"{k}/{n}", *m.span("p")))
     return out
 
 
