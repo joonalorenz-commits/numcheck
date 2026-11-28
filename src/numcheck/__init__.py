@@ -46,23 +46,33 @@ def check(pages: dict[int, str]) -> list[Finding]:
     arms = (distinct[0], distinct[1]) if len(distinct) == 2 else None
     denominators = sorted(set(checks.total_counts(flat)) | set(all_headers) | ({sum(arms)} if arms else set()))
     out: list[Finding] = []
-    header: list[int] = []
+    header: list[int] = []                             # the table header continued from the page before
     for n, t in flat.items():
-        new = checks.header_counts(t)
-        header = new if len(new) >= 2 else header     # a table continues on the next page
+        # Cells before the first "N = ..." on a page continue the table of the page before (at most one
+        # continuation page); from the first N on, all N's of the page count, as before.
+        page_header = checks.header_counts(t)
+        first = checks.first_header(t) if len(page_header) >= 2 else len(t)
+        # The continued part is read alone, the page as a whole as before; for a cell read twice the
+        # first reading is kept (see below).
+        parts = [(t[:first] + " " * (len(t) - first), header), (t, page_header)]
+        for part, h in parts:
+            if len(h) < 2:
+                continue
+            out += checks.table_cells(n, part, h)
+            out += checks.table_cells_spanned(n, part, h)
+            out += checks.category_sums(n, part, h)
+            out += checks.row_totals(n, part, h)
+            out += checks.subgroup_means(n, part, h)
         out += checks.fractions(n, t)
-        out += checks.table_cells(n, t, header)
-        out += checks.table_cells_spanned(n, t, header)
-        out += checks.category_sums(n, t, header)
         out += checks.column_partitions(n, t)
-        out += checks.row_totals(n, t, header)
-        out += checks.subgroup_means(n, t, header)
         out += checks.grim_percents(n, t, denominators)
         out += checks.two_group_tests(n, t, arms)
         out += checks.test_statistics(n, t)
         out += checks.ci_p_values(n, t)
-        if len(new) < 2:
-            header = []                                # at most one continuation page
+        # What continues on the next page are the N's from the first multi-column header on: a single
+        # "N = 30" of a one-arm table before it does not belong to the table that continues.
+        groups = checks.header_groups(t)
+        header = checks.header_counts(t[groups[0][0]:]) if groups else (page_header if len(page_header) >= 2 else [])
     out += text_vs_table.check(prepared)
     out += denominator.check(prepared)
     # Two table checks can read the same cell; keep the first reading.

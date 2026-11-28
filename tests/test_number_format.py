@@ -49,3 +49,16 @@ def test_von_count_is_not_a_statement_of_its_own():
             "und 27 von 42 (64,3 %) sowie 15 von 42 [35,7 %].")
     flagged = [f for f in check_pages({1: page}) if f.flagged]
     assert flagged == []
+
+
+def test_table_continued_on_next_page_keeps_its_header():
+    # Page 1: a one-arm table (N = 30), then a four-column table whose rows go on to page 2.
+    # Page 2 starts with those rows and then has a new header for another part of the table.
+    page1 = ("Tabelle 1 Risankizumab N = 30 Randomisiert, n (%) 30 (100,0) "
+             "Tabelle 2 Risankizumab Ustekinumab Risankizumab Ustekinumab N = 304 N = 100 N = 294 N = 99 "
+             "Alter, n (%) 86 (28,3) 34 (34,0) 105 (35,7) 30 (30,3)")
+    page2 = ("Ethnie, n (%) weiß 200 (65,8) 74 (74,0) 255 (86,7) 91 (91,9) "
+             "Teilanwendungsgebiet B N = 100 N = 34 N = 90 N = 36 "
+             "Geschlecht, n (%) weiblich 28 (28,0) 9 (26,5) 32 (35,6) 11 (30,6)")
+    flagged = [f for f in check_pages({1: page1, 2: page2}) if f.flagged]
+    assert flagged == []

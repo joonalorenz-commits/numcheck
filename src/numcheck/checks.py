@@ -100,6 +100,28 @@ def header_counts(t: str) -> list[int]:
     return [int(re.sub(r"[, ]", "", x)) for x in _HEADER.findall(t)]
 
 
+
+def header_groups(t: str, gap: int = 120) -> list[tuple[int, list[int]]]:
+    """Table headers on a page: runs of at least two "N = ..." close together, with where each run starts.
+
+    A page can hold several tables, each with its own header
+    ("OptIMMize-1 N = 30 ... UltIMMa-1 UltIMMa-2 N = 304 N = 100 N = 294 N = 99").
+    """
+    runs: list[list[re.Match]] = []
+    for m in _HEADER.finditer(t):
+        if runs and m.start() - runs[-1][-1].end() <= gap:
+            runs[-1].append(m)
+        else:
+            runs.append([m])
+    return [(r[0].start(), header_counts(t[r[0].start():r[-1].end() + 4])) for r in runs if len(r) >= 2]
+
+
+def first_header(t: str) -> int:
+    """Where the first "N = ..." of a page starts."""
+    m = _HEADER.search(t)
+    return m.start() if m else len(t)
+
+
 def _any_denominator(p: str, denominators: Iterable[int], count: Optional[int] = None) -> Optional[tuple[str, int, int]]:
     """Is there a denominator (and count) that gives p when rounded? Otherwise at least truncated?"""
     truncated = None
